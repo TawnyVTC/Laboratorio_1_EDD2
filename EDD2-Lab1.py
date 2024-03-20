@@ -4,12 +4,12 @@ import networkx as nx
 import os
 
 class avl_Node(object):
-    def __init__(self,  value):  
-
+    def __init__(self, value, depth=0):  
         self.value = value
         self.left = None
         self.right = None
         self.height = 1
+        self.depth = depth 
         
 class AVLTree(object):
     def __init__(self):
@@ -166,6 +166,7 @@ class AVLTree(object):
         a.height = 1 + max(self.avl_Height(a.left), self.avl_Height(a.right))
         return a
 
+    # Método para visualizar el árbol binario AVL.
     def visualize_binary_tree(self, root):
         G = nx.DiGraph()
         self._build_graph(G, root)
@@ -191,7 +192,7 @@ class AVLTree(object):
                 print(f"Tipo de nodo no reconocido: {tipo}")
                 continue
 
-            G.nodes[node]['image_path'] = image_path
+            G.nodes[node]['image_path'] = image_path  # Asignar la ruta a los nodos
 
         nx.draw(G, pos, with_labels=True, node_size=500, node_color="skyblue", font_size=11, font_weight="bold")
 
@@ -200,7 +201,7 @@ class AVLTree(object):
 
         plt.show()
 
-
+    # Método auxiliar para construir el grafo para la visualización del árbol.
     def _build_graph(self, G, root):
         if root is not None:
             if root.left:
@@ -210,18 +211,45 @@ class AVLTree(object):
                 G.add_edge(root.value, root.right.value)
                 self._build_graph(G, root.right)
 
-    def draw_vertical_tree(self, G, root, depth=0, x=0, y=0, spacing=1):
+    def inOrderTraversal(self, root):
+        if root:
+            yield from self.inOrderTraversal(root.left)
+            yield root
+            yield from self.inOrderTraversal(root.right)
+
+    def draw_vertical_tree(self, G, root, x=0, y=0, spacing=1):
         if root is not None:
-            node_length = len(str(root.value)) * 0.5
-            G.nodes[root.value]['pos'] = (x, -y)
-            max_depth = self.get_max_depth(root)
+            # Calcular la posición y para el nodo actual en función de su profundidad
+            depth = self.get_max_depth(root)
+            y_position = -depth * spacing
+
+            # Asignar la posición x al nodo actual
+            G.nodes[root.value]['pos'] = (x, y_position)
+
+            # Calcular la posición x para los hijos del nodo actual
             if root.left:
-                G.add_edge(root.value, root.left.value)
-                self.draw_vertical_tree(G, root.left, depth + 1, x - spacing * (max_depth - depth), y - spacing, spacing / 2)
+                # La posición x para el hijo izquierdo se ajusta hacia la izquierda
+                self.draw_vertical_tree(G, root.left, x - spacing, y, spacing / 2)
             if root.right:
-                G.add_edge(root.value, root.right.value)
-                self.draw_vertical_tree(G, root.right, depth + 1, x + spacing * (max_depth - depth), y - spacing, spacing / 2)
+                # La posición x para el hijo derecho se ajusta hacia la derecha
+                self.draw_vertical_tree(G, root.right, x + spacing, y, spacing / 2)
+
+            # Construir el grafo agregando aristas entre nodos
+            self._build_graph(G, root)
+
+            # Ajustar la separación entre nodos en el mismo nivel después de asignar las posiciones
+            if root.left and root.right:
+                sibling_spacing = abs(G.nodes[root.left.value]['pos'][0] - G.nodes[root.right.value]['pos'][0])
+                spacing = sibling_spacing / 2
+
+            # Calcular la posición x para los hijos del nodo actual después de ajustar la separación
+            if root.left:
+                self.draw_vertical_tree(G, root.left, x - spacing, y, spacing / 2)
+            if root.right:
+                self.draw_vertical_tree(G, root.right, x + spacing, y, spacing / 2)
+
         return nx.get_node_attributes(G, 'pos')
+
 
 
 
